@@ -1,36 +1,27 @@
 library(shiny)
 library(ggplot2)
 
-rimageOutput<-function (outputId, width = "100%", height = "400px", clickId = NULL, 
-          hoverId = NULL, hoverDelay = 300, hoverDelayType = c("debounce", 
-                                                               "throttle")) 
-{
-  if (is.null(clickId) && is.null(hoverId)) {
-    hoverDelay <- NULL
-    hoverDelayType <- NULL
-  }
-  else {
-    hoverDelayType <- match.arg(hoverDelayType)[[1]]
-  }
-  style <- paste("width:", validateCssUnit(width), ";", "height:", 
-                 validateCssUnit(height))
-  div(id = outputId, class = "shiny-image-output", style = style, 
-      `data-click-id` = clickId, `data-hover-id` = hoverId, 
-      `data-hover-delay` = hoverDelay, `data-hover-delay-type` = hoverDelayType)
-}
+
 
 shinyUI(pageWithSidebar(
   
-  headerPanel("Recomanager Test"),
+  headerPanel("Beamline Tools"),
   
   sidebarPanel(
-    uiOutput('img_selector'),
-    selectInput('facet_row', 'Algorithm', c(None='.', "Gridrec","FBP")),
-    uiOutput('minmaxselector'),
-    plotOutput('hist')
+    uiOutput("drive_selector"),
+    uiOutput("disk_selector"),
+    uiOutput("sample_selector")
   ),
   
   mainPanel(
-    rimageOutput('preview',clickId='previewClick')
+    tabsetPanel(
+      tabPanel("Projection Viewer",
+               uiOutput('projection_selector'),
+               uiOutput('minmax_selector'),
+               plotOutput('preview',clickId='previewClick')),
+      tabPanel("Log File",tableOutput("log_file")),
+      tabPanel("Folder Contents",dataTableOutput("folder_contents"))
+      )
+    
   )
 ))

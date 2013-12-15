@@ -1,7 +1,12 @@
-# fixed dataset
-c.nums<-c("30","35","40","45","50","55")
-c.files<-paste("http://people.ee.ethz.ch/~maderk/pivoB04_0",c.nums,"1.sin.DMP",sep="")
-names(c.files)<-c.nums
+library(tiff)
+# path paste
+pa.paste<-function(...) paste(...,sep="/")
+get.last<-function(in.list,offset=0) in.list[length(in.list)-offset]
+pa.getlast<-function(in.path,offset=0) get.last(strsplit(in.path,"/")[[1]],offset=offset)
+get.or.blank<-function(var,altval="") {
+  if(is.null(var)) altval
+  else var
+}
 read.dmp.vals<-function(path="/Users/mader/Dropbox/TIPL/test/io_tests/rec_DMP/pivoB04_0301.sin.DMP") {
   pprint("reading img",path)
   if(nchar(path)>1) {
