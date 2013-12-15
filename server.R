@@ -62,17 +62,53 @@ shinyServer(function(input, output) {
   })
   
   
-  ## code for rendering the projection
+
+
+  
+
+  
+  ## read projections, scale, and perform flat-field correction
+  read.cur.prj<-reactive({
+    tif.file<-papaste(get.sample.path(),"tif",
+                      get.or.blank(input$projection_selected))
+    readTIFF(tif.file)
+  })
+  get.flt.prj<-reactive({
+    "/Users/mader/Dropbox/WorkRelated/BeamlineTools/Data10/disk1/01_/tif/01_0044.tif"
+  })
+  read.flt.prj<-reactive({
+    readTIFF(get.flt.prj())
+  })
+  get.cor.prj<-reactive({
+    if(get.or.blank(input$flatfield_correction,F)) read.cur.prj()
+    else read.flt.prj()/read.cur.prj()
+  })
   get.min<-reactive({
     get.or.blank(input$min_val,0.00)
   })
   
   get.max<-reactive({
-    get.or.blank(input$min_val,0.08)
+    get.or.blank(input$min_val,1)
   })
-
-  get.scaled.vals<-reactive({
-    cin<-c(0,1,1)
+  
+  output$minmax_selector<-renderUI({
+    gvals<-as.vector(get.cor.prj())
+    if (length(gvals)>1) {
+      wellPanel(sliderInput('min_val', 'Minimum Value',
+                            min=min(gvals), max=max(gvals),
+                            value=min(gvals)),
+                sliderInput('max_val', 'Maximum Value',
+                            min=min(gvals), max=max(gvals),
+                            value=max(gvals)),
+                h4(paste("Cur Position",input$previewClick$x,", y",input$previewClick$x))) 
+    } else h3("No Image Loaded")
+  })
+  output$prj_histogram<-renderPlot({
+    hist(get.cor.prj())
+  })
+  ## code for rendering the projection
+  get.scaled.prj<-reactive({
+    cin<-get.cor.prj()
     gvals<-cin$vals
     gvals<-(gvals-get.min())/(get.max()-get.min())
     gvals[which(gvals<0)]<-0
@@ -80,29 +116,16 @@ shinyServer(function(input, output) {
     cin$vals<-gvals
     cin
   })
-
+  output$prj_preview<-renderPlot({
+    c.img<-t(get.cor.prj())
+    x.vals<-c(1:nrow(c.img))
+    y.vals<-c(1:ncol(c.img)) #zlim=c(get.min(),get.max())
+    image(x.vals,y.vals,c.img,useRaster=T,col=terrain.colors(100),axes=F)
+    box()
+  })
   
-  output$minmax_selector<-renderUI({
-    gvals<-c(1,2,3)
-    if (length(gvals)>1) {
-      wellPanel(sliderInput('min_val', 'Minimum Value',
-                  min=min(gvals), max=max(gvals),
-                  value=min(gvals)),
-                sliderInput('max_val', 'Maximum Value',
-                            min=min(gvals), max=max(gvals),
-                            value=max(gvals)),
-                h4(paste("Cur Position",input$previewClick$x,", y",input$previewClick$x))) 
-    } else h3("No Image Loaded")
-  })
-  read.cur.prj<-reactive({
-    tif.file<-papaste(get.sample.path(),"tif"
-                      get.or.blank(input$projection_selected))
-    print(tif.file)
-    readTIFF(tif.file)
-  })
-  output$preview<-renderPlot({
-    rasterImage(read.cur.prj())
-  })
+
+
   
   ## code for previewing folders
   output$log_file<-renderTable({
