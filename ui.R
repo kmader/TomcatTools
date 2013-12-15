@@ -18,8 +18,8 @@ shinyUI(pageWithSidebar(
       tabPanel("Projection Viewer",
                checkboxInput("flatfield_correction","Perform flat-field correction",F),
                uiOutput('projection_selector'),
-               uiOutput('minmax_selector'),
                plotOutput('prj_preview',clickId='previewClick'),
+               uiOutput('minmax_selector'),
                plotOutput('prj_histogram')),
       tabPanel("Log File",tableOutput("log_file")),
       tabPanel("Folder Contents",dataTableOutput("folder_contents"))
