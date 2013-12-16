@@ -27,7 +27,13 @@ shinyUI(pageWithSidebar(
                  sliderInput('prj_crop_maxy', 'Min Y', min=1, max=2160,value=2160,round=0)
                 ),
                uiOutput('minmax_selector'),
-               plotOutput('prj_histogram')),
+               plotOutput('prj_histogram')
+               ),
+      tabPanel("Reconstruction Viewer",
+               uiOutput('reconstruction_selector'),
+               plotOutput('rec_preview',clickId='recoClick',height="600px"),
+               plotOutput('rec_histogram')
+               ),
       tabPanel("Log File",tableOutput("log_file")),
       tabPanel("Folder Contents",dataTableOutput("folder_contents"))
       )

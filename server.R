@@ -124,6 +124,25 @@ shinyServer(function(input, output) {
           useRaster=T,col=get.colors())
   })
   
+  
+  
+  ## reconstruction previewing and such
+  get.reconstructions<-reactive({
+    as.vector(sapply(Sys.glob(pa.paste(get.sample.path(),"rec*/")),pa.getlast))
+  })
+  get.reco.slices<-reactive({
+    as.vector(sapply(Sys.glob(pa.paste(get.sample.path(),
+                                       get.or.blank(input$reconstruction_selected),
+                                       "/*.*")),pa.getlast))
+  })
+  output$reconstruction_selector<-renderUI({
+    if (length(get.reconstructions())>1) {
+      wellPanel(selectInput('reconstruction_selected', 'Reconstruction', get.reconstructions()), 
+      selectInput('slice_selected','Slice',get.reco.slices()))
+    } else h3("No Reconstructions for Current Sample")
+  })
+  
+  
   ## code for previewing folders
   output$log_file<-renderTable({
     o.df<-data.frame(get.log.lines())
