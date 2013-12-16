@@ -8,7 +8,7 @@ get.or.blank<-function(var,altval="") {
   if(is.null(var)) altval
   else var
 }
-read.dmp.vals<-function(path="/Users/mader/Dropbox/TIPL/test/io_tests/rec_DMP/pivoB04_0301.sin.DMP") {
+read.dmp.vals<-function(path) {
   pprint("reading img",path)
   if(nchar(path)>1) {
     cdmp<-file(path,open="rb")
@@ -28,12 +28,25 @@ read.dmp.vals<-function(path="/Users/mader/Dropbox/TIPL/test/io_tests/rec_DMP/pi
 dmp.val.to.img<-function(dmp.val) {
   (array(dmp.val$vals,dim=dmp.val$dim))
 }
-read.dmp<-function(path="/Users/mader/Dropbox/TIPL/test/io_tests/rec_DMP/pivoB04_0301.sin.DMP") {
+#' Read DMP loads a dmp file as a data frame
+#'
+#' Data frame is a list of values (vals) and a dimension (dim=(x,y)) which can be used with reshape
+#' to regenerate a matrix 
+#'
+#' @param path the name of the DMP file to open
+read.dmp<-function(path) {
   dmp.val<-read.dmp.vals(path)
   dmp.val.to.img(path)
 }
 
-pprint<-function(...) print(paste(...))
+pprint<-function(...) print(paste(...)) # makes print and paste more convienent
+#' Parse the log file made by the scanning and reconstruction at TOMCAT
+#'
+#' The command cleans the whitespace at the beginning and end (using trim, ideally gsub would work)
+#' it then splits all lines into option (before the :) and value (after the :)
+#' it assigns catagories based on intermediate lines starting with ---
+#'
+#' @param log.lines is a list with an entry for each line
 parse.log.lines<-function(log.lines) {
   get.clean<-function(c.arg) { # trim the leading and trailing whitespaces
     gsub(". $", "",gsub("^ .", "", c.arg))
@@ -45,7 +58,7 @@ parse.log.lines<-function(log.lines) {
   }
   # initially no category
   cur.category<<-""
-  o.df<-ldply(fl,function(c.item) {
+  o.df<-ldply(log.lines,function(c.item) {
     if(substring(c.item,1,3)=="---") {
       # new catagory
       invisible(cur.category<<-get.clean(gsub("-","",c.item)))
@@ -65,6 +78,11 @@ parse.log.lines<-function(log.lines) {
   o.df$Option<-as.character(o.df$Option)
   o.df
 }
+#' Extract scan info from the parsed log file
+#'
+#' Extracts specific metrics like dark, flat, and projection count from the parsed data frame
+#'
+#' @param in.df the data frame produced by parse.log.lines
 parse.scan.info<-function(in.df) {
   o.val<-list()
   o.val$Darks<-as.numeric(subset(in.df,Category=="Scan Settings"  & Option=="Number of darks")$Value)
@@ -72,4 +90,3 @@ parse.scan.info<-function(in.df) {
   o.val$Projections<-as.numeric(subset(in.df,Category=="Scan Settings"  & Option=="Number of projections")$Value)
   o.val
 }
-
