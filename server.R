@@ -101,22 +101,32 @@ shinyServer(function(input, output) {
   get.max<-reactive({
     get.or.blank(input$prj_max_val,1)
   })
+  
   ## code for rendering the projection
+  get.colors<-reactive({
+    if (input$use_color) rainbow(80)
+    else gray((0:80)/80)
+  })
   output$prj_preview<-renderPlot({
     c.img<-t(get.cor.prj())
     x.vals<-c(1:nrow(c.img))
-    y.vals<-c(1:ncol(c.img)) #
-    print(c(get.min(),get.max()))
-    image(x.vals,y.vals,c.img,
+    y.vals<-c(1:ncol(c.img)) 
+    if(input$prj_crop) {
+      imagefn<-function(...) image(...,xlim=c(input$prj_crop_minx,input$prj_crop_maxx),
+                                   ylim=c(input$prj_crop_miny,input$prj_crop_maxy),asp=0,axes=T) # no aspect ratio
+    }
+    else {
+      imagefn<-function(...) image(...,asp=1,axes=F)
+    }
+    
+    imagefn(x.vals,y.vals,c.img,
           zlim=c(get.min(),get.max()),
-          useRaster=T,col=gray((0:32)/32),axes=F,asp=1)
-    box()
+          useRaster=T,col=get.colors())
   })
   
   ## code for previewing folders
   output$log_file<-renderTable({
     o.df<-data.frame(get.log.lines())
-    print(o.df)
     o.df
   })
   
