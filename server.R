@@ -7,7 +7,8 @@ shinyServer(function(input, output) {
   
   ## path code for selecting the current measurement
   root.dir<-reactive({
-    getwd()
+    if(!exists("old.wd")) old.wd<-getwd()
+    old.wd
   })
   get.drives<-reactive({
     drv.list<-sapply(Sys.glob(pa.paste(root.dir(),"*/")),
@@ -37,27 +38,37 @@ shinyServer(function(input, output) {
   output$sample_selector<-renderUI({
     selectInput("sample_selected","Sample Name",get.samples())
   })
+  get.disk.path<-reactive({
+    pa.paste(root.dir(),
+             get.or.blank(input$drive_selected,"*"),
+             get.or.blank(input$disk_selected,"*"))
+  })
   # reading the log information and projections
   get.sample.path<-reactive({
-    if(!is.null(input$sample_selected)) pa.paste(root.dir(),
-                                                get.or.blank(input$drive_selected,"*"),
-                                                get.or.blank(input$disk_selected,"*"),
+    if(!is.null(input$sample_selected)) pa.paste(get.disk.path(),
                                                 get.or.blank(input$sample_selected,"*"))
     else ""
   })
   get.log.lines<-reactive({
     log.name<-Sys.glob(pa.paste(get.sample.path(),"tif/*.log"))[1]
+    print(log.name)
     log.file<-file(log.name,"r")
     out.lines<-readLines(log.file)
     close(log.file)
-    out.lines
+    parse.log.lines(out.lines)
+  })
+  get.scan.info<-reactive({
+    parse.scan.info(get.log.lines())
   })
   get.projections<-reactive({
     as.vector(sapply(Sys.glob(pa.paste(get.sample.path(),"tif/*.tif")),pa.getlast))
   })
   output$projection_selector<-renderUI({
     if (length(get.projections())>1) {
-      selectInput('projection_selected', 'Projections', get.projections()) 
+      wellPanel(selectInput('projection_selected', 'Projections', get.projections()), 
+      sliderInput('drk_sel', 'Select Dark', min=1, max=get.scan.info()$Darks,value=1,round=0),
+      sliderInput('flt_sel', 'Select Flat', min=1, max=get.scan.info()$Flats,value=1,round=0),
+      sliderInput('prj_sel', 'Select Projection', min=1, max=get.scan.info()$Projections,value=1,round=0))
     } else h3("No Projections for Current Sample")
   })
   
@@ -144,8 +155,8 @@ shinyServer(function(input, output) {
   
   
   ## code for previewing folders
-  output$log_file<-renderTable({
-    o.df<-data.frame(get.log.lines())
+  output$log_file<-renderDataTable({
+    o.df<-(get.log.lines())
     o.df
   })
   
@@ -153,9 +164,33 @@ shinyServer(function(input, output) {
     if(nchar(get.sample.path()>0)) {
       all.subfiles<-Sys.glob(pa.paste(get.sample.path(),"*/*.*"))
       subfiles<-ldply(all.subfiles,function(filename) {
-        data.frame(folder=pa.getlast(filename,1),size=file.info(filename)$size)
+        data.frame(folder=pa.getlast(filename,1),
+                   ext=get.last(strsplit(pa.getlast(filename),"[.]")[[1]]),
+                   size=file.info(filename)$size)
       })
-      ddply(subfiles,.(folder),function(c.folder) data.frame(files=nrow(c.folder),size=sum(c.folder$size)/1e6))
+      ddply(subfiles,.(folder),function(c.folder) {
+        data.frame(files=nrow(c.folder),
+                   size_gb=sum(c.folder$size)/1e9,
+                   exts=paste(unique(c.folder$ext),collapse=","))
+      })
+    }
+    
+  })
+  
+  output$disk_contents<-renderDataTable({
+    if(nchar(get.disk.path()>0)) {
+      all.subfiles<-Sys.glob(pa.paste(get.disk.path(),"*/*/*.*"))
+      subfiles<-ldply(all.subfiles,function(filename) {
+        data.frame(folder=pa.getlast(filename,3),
+                   ext=get.last(strsplit(pa.getlast(filename),"[.]")[[1]]),
+                   size=file.info(filename)$size)
+      })
+      
+      ddply(subfiles,.(folder),function(c.folder) {
+        data.frame(files=nrow(c.folder),
+                   size_gb=sum(c.folder$size)/1e9,
+                   exts=paste(unique(c.folder$ext),collapse=","))
+        })
     }
     
   })

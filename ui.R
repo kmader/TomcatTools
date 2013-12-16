@@ -34,8 +34,9 @@ shinyUI(pageWithSidebar(
                plotOutput('rec_preview',clickId='recoClick',height="600px"),
                plotOutput('rec_histogram')
                ),
-      tabPanel("Log File",tableOutput("log_file")),
-      tabPanel("Folder Contents",dataTableOutput("folder_contents"))
+      tabPanel("Log File",dataTableOutput("log_file")),
+      tabPanel("Folder Contents",dataTableOutput("folder_contents")),
+      tabPanel("Disk Contents",dataTableOutput("disk_contents"))
       )
     
   )
